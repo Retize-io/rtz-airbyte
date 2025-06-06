@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "caption": "Old IGTV content with views metric issue",
+      "comments_count": 5,
+      "id": "09894619573775999",
+      "ig_id": "3091150577047429999",
+      "is_comment_enabled": true,
+      "like_count": 15,
+      "media_type": "VIDEO",
+      "media_product_type": "IGTV",
+      "media_url": "https://fakecontent.com/path/to/tv/content",
+      "owner": {
+        "id": "41408147298757123"
+      },
+      "permalink": "https://instagram.com/tv/BxxxxxxX/",
+      "shortcode": "BxxxxxxX",
+      "thumbnail_url": "https://fakecontent.cdninstagram.com/v/somepath/",
+      "timestamp": "2020-01-15T10:30:00+0000",
+      "username": "username"
+    }
+  ],
+  "paging": {
+    "cursors": {
+      "before": "QVFIUnZA1cW5ldERDZAlFPOWdfN1NKal9PU2o3R0s5ekY4eGNfRXczN09ud2k2NlFuZA3IzVHd0dlU3cFdJYWw5aXdna0xPVHpCRjRMSUdTYUUzeEtBalp0VDd3"
+    }
+  }
+}
