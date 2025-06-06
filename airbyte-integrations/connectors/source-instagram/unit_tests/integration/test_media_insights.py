@@ -56,6 +56,7 @@ MEDIA_ID_GENERAL_MEDIA = "35076616084176123"
 MEDIA_ID_ERROR_POSTED_BEFORE_BUSINESS = "35076616084176124"
 MEDIA_ID_ERROR_WITH_WRONG_PERMISSIONS = "35076616084176125"
 MEDIA_ID_ERROR_WITH_WRONG_PERMISSIONS_CODE_10 = "35076616084176126"
+MEDIA_ID_TV_CONTENT = "09894619573775999"
 
 REELS = "reels"
 VIDEO_FEED = "video_feed"
@@ -65,6 +66,7 @@ GENERAL_MEDIA = "general_media"
 ERROR_POSTED_BEFORE_BUSINESS = "error_posted_before_business"
 ERROR_WITH_WRONG_PERMISSIONS = "error_with_wrong_permissions"
 ERROR_WITH_WRONG_PERMISSIONS_CODE_10 = "error_with_wrong_permissions_code_10"
+TV_CONTENT = "tv_content"
 
 _MEDIA_IDS = {
     REELS: MEDIA_ID_REELS,
@@ -72,6 +74,7 @@ _MEDIA_IDS = {
     VIDEO: MEDIA_ID_VIDEO,
     CAROUSEL_ALBUM: MEDIA_ID_CAROUSEL_ALBUM,
     GENERAL_MEDIA: MEDIA_ID_GENERAL_MEDIA,
+    TV_CONTENT: MEDIA_ID_TV_CONTENT,
 }
 
 METRICS_GENERAL_MEDIA = ["reach", "saved", "likes", "comments", "shares", "follows", "profile_visits", "views"]
@@ -82,6 +85,15 @@ _METRICS = {
     MEDIA_ID_VIDEO: ["reach", "saved", "likes", "comments", "shares", "follows", "profile_visits", "views"],
     MEDIA_ID_CAROUSEL_ALBUM: ["reach", "saved", "shares", "follows", "profile_visits", "views"],
     MEDIA_ID_GENERAL_MEDIA: METRICS_GENERAL_MEDIA,
+    MEDIA_ID_TV_CONTENT: [
+        "reach",
+        "saved",
+        "likes",
+        "comments",
+        "shares",
+        "follows",
+        "profile_visits",
+    ],  # Note: no 'views' for /tv/ content
     # Reusing general media metrics for error scenarios
     MEDIA_ID_ERROR_POSTED_BEFORE_BUSINESS: METRICS_GENERAL_MEDIA,
     MEDIA_ID_ERROR_WITH_WRONG_PERMISSIONS: METRICS_GENERAL_MEDIA,
@@ -362,3 +374,37 @@ class TestFullRefresh(TestCase):
         assert output.records[0].record.data["id"]
         for metric in _METRICS[MEDIA_ID_GENERAL_MEDIA]:
             assert metric in output.records[0].record.data
+
+    @HttpMocker()
+    def test_instagram_insights_tv_content_excludes_views_metric(self, http_mocker: HttpMocker) -> None:
+        """Test that /tv/ content excludes 'views' metric to avoid API errors."""
+        test = TV_CONTENT
+        http_mocker.get(
+            get_account_request().build(),
+            get_account_response(),
+        )
+        http_mocker.get(
+            _get_parent_request().build(),
+            _get_response(stream_name=_PARENT_STREAM_NAME, test=test)
+            .with_record(_record(stream_name=_PARENT_STREAM_NAME, test=test))
+            .build(),
+        )
+
+        # Mock successful response for TV content without views metric
+        http_mocker.get(
+            _get_child_request(media_id=MEDIA_ID_TV_CONTENT, metric=_METRICS[MEDIA_ID_TV_CONTENT]).build(),
+            HttpResponse(json.dumps(find_template(f"{_STREAM_NAME}_for_{test}", __file__)), 200),
+        )
+
+        output = self._read(config_=config())
+        assert len(output.records) == 1
+        assert output.records[0].record.data["page_id"]
+        assert output.records[0].record.data["business_account_id"]
+        assert output.records[0].record.data["id"]
+
+        # Verify that all expected metrics are present
+        for metric in _METRICS[MEDIA_ID_TV_CONTENT]:
+            assert metric in output.records[0].record.data
+
+        # Critically: verify that 'views' metric is NOT present in TV content response
+        assert "views" not in output.records[0].record.data

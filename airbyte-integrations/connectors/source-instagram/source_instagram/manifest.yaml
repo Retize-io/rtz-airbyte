@@ -73,7 +73,8 @@ definitions:
               value: >-
                 {{ {"media_id": record['id'], "media_type":
                 record['media_type'], "media_product_type":
-                record['media_product_type'], "business_account_id":
+                record['media_product_type'], "permalink":
+                record['permalink'], "business_account_id":
                 stream_partition.account.business_account_id, "page_id":
                 stream_partition.account.page_id} }}
         - type: AddFields
@@ -119,16 +120,16 @@ definitions:
             metric: >-
               {% if stream_partition.media_insights_info.media_product_type ==
               "REELS" %}{{
-              'comments,ig_reels_avg_watch_time,ig_reels_video_view_total_time,likes,reach,saved,shares,views'
+              'comments,ig_reels_avg_watch_time,ig_reels_video_view_total_time,likes,reach,saved,shares' + (',views' if '/tv/' not in stream_partition.media_insights_info.permalink else '')
               }}{% elif stream_partition.media_insights_info.media_type ==
               "VIDEO" and
               stream_partition.media_insights_info.media_product_type == "FEED"
-              %}{{  'reach,saved,views'}}{% elif
+              %}{{  'reach,saved' + (',views' if '/tv/' not in stream_partition.media_insights_info.permalink else '') }}{% elif
               stream_partition.media_insights_info.media_type == "VIDEO" %}{{
-              'reach,saved,likes,comments,shares,follows,profile_visits,views'
+              'reach,saved,likes,comments,shares,follows,profile_visits' + (',views' if '/tv/' not in stream_partition.media_insights_info.permalink else '')
               }}{%elif stream_partition.media_insights_info.media_type ==
-              "CAROUSEL_ALBUM"%}{{ 'reach,saved,shares,follows,profile_visits,views' }}{% else %}{{
-              'reach,saved,likes,comments,shares,follows,profile_visits,views' }}{%
+              "CAROUSEL_ALBUM"%}{{ 'reach,saved,shares,follows,profile_visits' + (',views' if '/tv/' not in stream_partition.media_insights_info.permalink else '') }}{% else %}{{
+              'reach,saved,likes,comments,shares,follows,profile_visits' + (',views' if '/tv/' not in stream_partition.media_insights_info.permalink else '') }}{%
               endif %}
           error_handler:
             type: CompositeErrorHandler
