@@ -19,7 +19,7 @@ from airbyte_cdk.test.mock_http.response_builder import (
     find_template,
 )
 
-from .config import BUSINESS_ACCOUNT_ID, ConfigBuilder
+from .config import BUSINESS_ACCOUNT_ID, START_DATE, ConfigBuilder
 from .pagination import NEXT_PAGE_TOKEN, InstagramPaginationStrategy
 from .request_builder import RequestBuilder, get_account_request
 from .response_builder import get_account_response
@@ -102,7 +102,12 @@ _METRICS = {
 
 
 def _get_parent_request() -> RequestBuilder:
-    return RequestBuilder.get_media_endpoint(item_id=BUSINESS_ACCOUNT_ID).with_limit(100).with_fields(PARENT_FIELDS)
+    return (
+        RequestBuilder.get_media_endpoint(item_id=BUSINESS_ACCOUNT_ID)
+        .with_limit(100)
+        .with_fields(PARENT_FIELDS)
+        .with_custom_param("since", START_DATE)
+    )
 
 
 def _get_child_request(media_id, metric) -> RequestBuilder:
