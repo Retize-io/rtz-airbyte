@@ -1,0 +1,79 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "description": "The unique identifier for the comment.",
+      "type": ["null", "string"]
+    },
+    "from": {
+      "description": "Information about the user who posted the comment.",
+      "type": ["null", "object"],
+      "properties": {
+        "id": {
+          "description": "The unique identifier for the user who posted the comment.",
+          "type": ["null", "string"]
+        },
+        "username": {
+          "description": "The username of the user who posted the comment.",
+          "type": ["null", "string"]
+        }
+      }
+    },
+    "timestamp": {
+      "description": "The date and time when the comment was created.",
+      "type": ["null", "string"],
+      "format": "date-time",
+      "airbyte_type": "timestamp_with_timezone"
+    },
+    "text": {
+      "description": "The text content of the comment.",
+      "type": ["null", "string"]
+    },
+    "like_count": {
+      "description": "The number of likes the comment has received.",
+      "type": ["null", "integer"]
+    },
+    "hidden": {
+      "description": "Whether the comment is hidden.",
+      "type": ["null", "boolean"]
+    },
+    "parent_id": {
+      "description": "The ID of the parent comment if this is a reply, null for top-level comments.",
+      "type": ["null", "string"]
+    },
+    "media_id": {
+      "description": "The ID of the media post this comment belongs to.",
+      "type": ["null", "string"]
+    },
+    "page_id": {
+      "description": "The ID of the Facebook page associated with this comment.",
+      "type": ["null", "string"]
+    },
+    "business_account_id": {
+      "description": "The ID of the Instagram business account associated with this comment.",
+      "type": ["null", "string"]
+    },
+    "post_id": {
+      "description": "Alias for media_id to match existing data structure.",
+      "type": ["null", "string"]
+    },
+    "from_id": {
+      "description": "The ID of the user who posted the comment (flattened from 'from' object).",
+      "type": ["null", "string"]
+    },
+    "from_username": {
+      "description": "The username of the user who posted the comment (flattened from 'from' object).",
+      "type": ["null", "string"]
+    },
+    "extracted_at": {
+      "description": "The timestamp when this comment data was extracted.",
+      "type": ["null", "string"],
+      "format": "date-time",
+      "airbyte_type": "timestamp_with_timezone"
+    },
+    "is_reply": {
+      "description": "Boolean indicating whether this is a reply to another comment.",
+      "type": ["null", "boolean"]
+    }
+  }
+}

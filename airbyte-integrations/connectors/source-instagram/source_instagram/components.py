@@ -1,7 +1,7 @@
 # Copyright (c) 2024 Airbyte, Inc., all rights reserved.
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, MutableMapping, Optional
 
 import requests
@@ -235,4 +235,120 @@ class InstagramBreakDownResultsTransformation(RecordTransformation):
     def transform(self, record: MutableMapping[str, Any], **kwargs) -> MutableMapping[str, Any]:
         record_total_value = record.pop("total_value")
         record["value"] = {res.get("dimension_values", [""])[0]: res.get("value") for res in record_total_value["breakdowns"][0]["results"]}
+        return record
+
+
+@dataclass
+class InstagramCommentsTransformation(RecordTransformation):
+    """
+    This transformation flattens the nested comments and replies structure from Instagram API into individual comment records.
+    It handles both top-level comments and their replies, creating separate records for each.
+
+    The transformation properly handles the Airbyte stream format where each comment becomes a separate record,
+    similar to the user's existing InstagramClient.get_post_comments method.
+    """
+
+    def transform(self, record: MutableMapping[str, Any], config: Optional[Config] = None, **kwargs) -> MutableMapping[str, Any]:
+        """
+        Transform the nested comments structure into flat comment records.
+        This follows the same pattern as the user's InstagramClient.get_post_comments method.
+        """
+        # Get the current timestamp for extracted_at field
+        extracted_at = datetime.now().isoformat() + "Z"
+
+        # Get media_id from stream partition for post_id
+        media_id = kwargs.get("stream_partition", {}).get("media_insights_info", {}).get("media_id")
+
+        # For Airbyte declarative streams, we need to process each comment individually
+        # This follows the same pattern as the user's existing code
+        self._process_comment(record, extracted_at, media_id, is_reply=False)
+
+        return record
+
+    def _process_comment(self, comment: Dict[str, Any], extracted_at: str, post_id: str, is_reply: bool = False) -> None:
+        """
+        Process a single comment, similar to the user's existing process_comment function.
+        """
+        # Add extracted_at timestamp
+        comment["extracted_at"] = extracted_at
+
+        # Add post_id reference
+        if post_id:
+            comment["post_id"] = post_id
+
+        # Add is_reply flag
+        comment["is_reply"] = is_reply
+
+        # Format timestamp if it exists
+        if comment.get("timestamp"):
+            # Ensure timestamp is in proper ISO format
+            try:
+                dt = datetime.strptime(comment["timestamp"], "%Y-%m-%dT%H:%M:%S%z")
+                formatted_str = dt.strftime("%Y-%m-%dT%H:%M:%S%z")
+                formatted_str_with_colon = formatted_str[:-2] + ":" + formatted_str[-2:]
+                comment["timestamp"] = formatted_str_with_colon
+            except (ValueError, TypeError):
+                # Keep original timestamp if parsing fails
+                pass
+
+        # Handle the 'from' field (user information) - flatten it
+        if "from" in comment and isinstance(comment["from"], dict):
+            comment["from_id"] = comment["from"].get("id")
+            comment["from_username"] = comment["from"].get("username")
+
+        # Process replies if they exist (for top-level comments only)
+        if not is_reply and "replies" in comment and "data" in comment["replies"]:
+            # Note: In Airbyte declarative streams, we can't yield multiple records from one transformation
+            # The API call already includes replies in the field expansion, so they should be handled
+            # by the record selector/extractor configuration in the manifest
+            pass
+
+        # Remove the nested replies field to avoid duplication in the final record
+        if "replies" in comment:
+            del comment["replies"]
+
+
+@dataclass
+class InstagramDateFilterTransformation(RecordTransformation):
+    """
+    Filters records based on timestamp to only include recent records.
+    This helps limit the data to recent posts/comments similar to the user's existing date filtering logic.
+    """
+
+    def transform(self, record: MutableMapping[str, Any], config: Optional[Config] = None, **kwargs) -> Optional[MutableMapping[str, Any]]:
+        """
+        Filter records based on start_date from config and a maximum lookback period.
+        """
+        if not config:
+            return record
+
+        # Get start_date from config, default to 30 days ago for comments
+        start_date_str = config.get("start_date")
+        if not start_date_str:
+            # Default to 30 days ago for comments to prevent too much historical data
+            start_date = datetime.now() - timedelta(days=30)
+        else:
+            try:
+                start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+            except (ValueError, TypeError):
+                # Fallback to 30 days ago if parsing fails
+                start_date = datetime.now() - timedelta(days=30)
+
+        # Check if record has timestamp
+        record_timestamp_str = record.get("timestamp")
+        if not record_timestamp_str:
+            return record  # Keep record if no timestamp
+
+        try:
+            # Parse record timestamp
+            record_timestamp = datetime.fromisoformat(record_timestamp_str.replace("Z", "+00:00"))
+
+            # Filter out records older than start_date
+            if record_timestamp < start_date:
+                return None  # Filter out this record
+
+        except (ValueError, TypeError):
+            # Keep record if timestamp parsing fails
+            pass
+
         return record

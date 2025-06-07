@@ -23,6 +23,7 @@ definitions:
           request_parameters:
             fields: >-
               caption,comments_count,id,ig_id,is_comment_enabled,like_count,media_type,media_product_type,media_url,owner,permalink,shortcode,thumbnail_url,timestamp,username,children
+            since: "{{ config.get('start_date') or (now_utc() - duration('P30D')).strftime('%Y-%m-%dT%H:%M:%SZ') }}"
           error_handler:
             type: CompositeErrorHandler
             error_handlers:
@@ -100,7 +101,19 @@ definitions:
         - type: CustomTransformation
           class_name: source_instagram.components.InstagramMediaChildrenTransformation
         - type: CustomTransformation
+          class_name: source_instagram.components.InstagramDateFilterTransformation
+        - type: CustomTransformation
           class_name: source_instagram.components.InstagramClearUrlTransformation
+      incremental_sync:
+        type: DatetimeBasedCursor
+        cursor_field: timestamp
+        cursor_datetime_formats:
+          - "%Y-%m-%dT%H:%M:%S%z"
+        datetime_format: "%Y-%m-%dT%H:%M:%S%z"
+        start_datetime:
+          type: MinMaxDatetime
+          datetime: "{{ config.get('start_date') or (now_utc() - duration('P30D')).strftime('%Y-%m-%dT%H:%M:%SZ') }}"
+          datetime_format: "%Y-%m-%dT%H:%M:%SZ"
       schema_loader:
         type: InlineSchemaLoader
         schema:
@@ -572,6 +585,123 @@ definitions:
         type: InlineSchemaLoader
         schema:
           $ref: "#/schemas/Api"
+    MediaComments:
+      type: DeclarativeStream
+      name: media_comments
+      primary_key:
+        - id
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: "#/definitions/base_requester"
+          path: "{{ stream_partition.media_insights_info.media_id }}/comments"
+          http_method: GET
+          request_parameters:
+            fields: >-
+              id,from,timestamp,text,like_count,hidden,parent_id,replies{id,from,timestamp,text,like_count,hidden,parent_id}
+          error_handler:
+            type: CompositeErrorHandler
+            error_handlers:
+              - type: DefaultErrorHandler
+                max_retries: 5
+                backoff_strategies:
+                  - type: ExponentialBackoffStrategy
+                    factor: 5
+                response_filters:
+                  - type: HttpResponseFilter
+                    action: IGNORE
+                    predicate: >-
+                      {{ 'error' in response and response['error']['code'] == 100 and
+                      response['error']['error_subcode'] == 33 }}
+                    error_message: >-
+                      Check provided permissions for: {{ response['error']['message'] }}
+                  - type: HttpResponseFilter
+                    action: IGNORE
+                    predicate: >-
+                      {{ 'error' in response and response['error']['code'] == 10 and
+                      response['error']['message'] == "(#10) Application does not have permission for this action" }}
+                    error_message: >-
+                      Check provided permissions for: {{ response['error']['message'] }}
+                  - type: HttpResponseFilter
+                    action: IGNORE
+                    predicate: >-
+                      {{ 'error' in response and response['error']['code'] == 100 and
+                      "comments are disabled" in response['error']['message'] }}
+                    error_message: >-
+                      Comments are disabled for this media: {{ response['error']['message'] }}
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+        paginator:
+          type: DefaultPaginator
+          page_token_option:
+            type: RequestOption
+            inject_into: request_parameter
+            field_name: after
+          page_size_option:
+            type: RequestOption
+            field_name: limit
+            inject_into: request_parameter
+          pagination_strategy:
+            type: CursorPagination
+            page_size: 100
+            cursor_value: >-
+              {{ response.get("paging", {}).get("cursors", {}).get("after", {}) }}
+            stop_condition: >-
+              {{ not response.get("paging", {}).get("cursors", {}).get("after", {}) }}
+        partition_router:
+          type: SubstreamPartitionRouter
+          parent_stream_configs:
+            - type: ParentStreamConfig
+              parent_key: media_insights_info
+              partition_field: media_insights_info
+              stream:
+                $ref: "#/definitions/streams/Media"
+      transformations:
+        - type: CustomTransformation
+          class_name: source_instagram.components.InstagramCommentsTransformation
+        - type: CustomTransformation
+          class_name: source_instagram.components.InstagramDateFilterTransformation
+        - type: AddFields
+          fields:
+            - type: AddedFieldDefinition
+              path:
+                - media_id
+              value: "{{ stream_partition.media_insights_info.media_id}}"
+              value_type: string
+        - type: AddFields
+          fields:
+            - type: AddedFieldDefinition
+              path:
+                - page_id
+              value: "{{ stream_partition.media_insights_info.page_id}}"
+              value_type: string
+        - type: AddFields
+          fields:
+            - type: AddedFieldDefinition
+              path:
+                - business_account_id
+              value: "{{ stream_partition.media_insights_info.business_account_id }}"
+              value_type: string
+        - type: CustomTransformation
+          class_name: source_instagram.components.InstagramClearUrlTransformation
+      incremental_sync:
+        type: DatetimeBasedCursor
+        cursor_field: timestamp
+        cursor_datetime_formats:
+          - "%Y-%m-%dT%H:%M:%S%z"
+        datetime_format: "%Y-%m-%dT%H:%M:%S%z"
+        start_datetime:
+          type: MinMaxDatetime
+          datetime: "{{ config.get('start_date') or (now_utc() - duration('P30D')).strftime('%Y-%m-%dT%H:%M:%SZ') }}"
+          datetime_format: "%Y-%m-%dT%H:%M:%SZ"
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: "#/schemas/MediaComments"
   base_requester:
     type: HttpRequester
     url_base: https://graph.facebook.com/v21.0
@@ -582,6 +712,7 @@ definitions:
 streams:
   - $ref: "#/definitions/streams/Media"
   - $ref: "#/definitions/streams/MediaInsights"
+  - $ref: "#/definitions/streams/MediaComments"
   - $ref: "#/definitions/streams/Users"
   - $ref: "#/definitions/streams/UserLifetimeInsights"
   - $ref: "#/definitions/streams/Stories"
@@ -598,6 +729,7 @@ metadata:
   autoImportSchema:
     Media: true
     MediaInsights: true
+    MediaComments: true
     Users: true
     UserLifetimeInsights: true
     Stories: true
@@ -609,6 +741,8 @@ metadata:
         - transformations
       MediaInsights:
         - transformations
+      MediaComments:
+        - transformations
       Users:
         - transformations
       UserLifetimeInsights:
@@ -619,6 +753,78 @@ metadata:
         - transformations
 
 schemas:
+  MediaComments:
+    type: object
+    $schema: http://json-schema.org/schema#
+    additionalProperties: true
+    properties:
+      id:
+        description: The unique identifier for the comment.
+        type:
+          - "null"
+          - string
+      from:
+        description: Information about the user who posted the comment.
+        type:
+          - "null"
+          - object
+        properties:
+          id:
+            description: The unique identifier for the user who posted the comment.
+            type:
+              - "null"
+              - string
+          username:
+            description: The username of the user who posted the comment.
+            type:
+              - "null"
+              - string
+      timestamp:
+        description: The date and time when the comment was created.
+        type:
+          - "null"
+          - string
+        format: date-time
+        airbyte_type: timestamp_with_timezone
+      text:
+        description: The text content of the comment.
+        type:
+          - "null"
+          - string
+      like_count:
+        description: The number of likes the comment has received.
+        type:
+          - "null"
+          - integer
+      hidden:
+        description: Whether the comment is hidden.
+        type:
+          - "null"
+          - boolean
+      parent_id:
+        description: The ID of the parent comment if this is a reply, null for top-level comments.
+        type:
+          - "null"
+          - string
+      media_id:
+        description: The ID of the media post this comment belongs to.
+        type:
+          - "null"
+          - string
+      extracted_at:
+        description: The timestamp when this comment data was extracted.
+        type:
+          - "null"
+          - string
+        format: date-time
+        airbyte_type: timestamp_with_timezone
+      is_reply:
+        description: Boolean indicating whether this is a reply to another comment.
+        type:
+          - "null"
+          - boolean
+    required:
+      - id
   Media:
     type: object
     $schema: http://json-schema.org/schema#
