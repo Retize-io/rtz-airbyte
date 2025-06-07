@@ -113,12 +113,12 @@ class InstagramIncrementalStream(InstagramStream, IncrementalMixin):
     def _update_state(self, current_stream_state: MutableMapping[str, Any], latest_record: Mapping[str, Any]):
         """Update stream state from latest record"""
         # if there is no `end_date` value take the `start_date`
-        record_value = latest_record.get(self.cursor_field) or self._start_date.to_iso8601_string()
+        record_value = latest_record.get(self.cursor_field) or self._start_date.format("YYYY-MM-DDTHH:mm:ssZ")
         account_id = latest_record.get("business_account_id")
         state_value = current_stream_state.get(account_id, {}).get(self.cursor_field) or record_value
         max_cursor = max(pendulum.parse(state_value), pendulum.parse(record_value))
         new_stream_state = copy.deepcopy(current_stream_state)
-        new_stream_state[account_id] = {self.cursor_field: str(max_cursor)}
+        new_stream_state[account_id] = {self.cursor_field: max_cursor.format("YYYY-MM-DDTHH:mm:ssZ")}
         return new_stream_state
 
 
@@ -221,7 +221,11 @@ class UserInsights(DatetimeTransformerMixin, InstagramIncrementalStream):
             start_date = max(start_date, self._start_date, pendulum.now().subtract(days=self.buffer_days))
             if start_date > pendulum.now():
                 continue
-            for since in pendulum.period(start_date, self._end_date).range("days", self.days_increment):
+
+            # Iterate through dates with the specified increment
+            current_date = start_date
+            while current_date <= self._end_date:
+                since = current_date
                 until = since.add(days=self.days_increment)
                 if self.should_exit_gracefully:
                     self.logger.info(f"Stopping syncing stream '{self.name}'")
@@ -229,9 +233,10 @@ class UserInsights(DatetimeTransformerMixin, InstagramIncrementalStream):
                 self.logger.info(f"Reading insights between {since.date()} and {until.date()}")
                 yield {
                     **stream_slice,
-                    "since": since.to_datetime_string(),
-                    "until": until.to_datetime_string(),  # excluding
+                    "since": since.to_iso8601_string(),
+                    "until": until.to_iso8601_string(),  # excluding
                 }
+                current_date = current_date.add(days=self.days_increment)
 
     def request_params(
         self,

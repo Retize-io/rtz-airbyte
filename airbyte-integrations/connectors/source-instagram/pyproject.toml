@@ -1,12 +1,12 @@
 [build-system]
-requires = [ "poetry-core>=1.0.0",]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 version = "4.1.0-rc.2"
 name = "source-instagram"
 description = "Source implementation for Instagram."
-authors = [ "Airbyte <contact@airbyte.io>",]
+authors = ["Airbyte <contact@airbyte.io>"]
 license = "MIT"
 readme = "README.md"
 documentation = "https://docs.airbyte.com/integrations/sources/instagram"
@@ -16,19 +16,23 @@ repository = "https://github.com/airbytehq/airbyte"
 include = "source_instagram"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
-facebook-business = "==21.0.5"
-airbyte-cdk = "^6"
-pendulum = "<3.0.0"
-cached-property = "==1.5.2"
+python = ">=3.10,<3.13"
+# facebook-business = "==21.0.5"
+# airbyte-cdk = "^6"
+# pendulum = "<3.0.0"
+# cached-property = "==1.5.2"
+facebook-business = "^22.0.5"
+airbyte-cdk = "^6.54.7"
+pendulum = "^3.1.0"
+cached-property = "^2.0.1"
 
 [tool.poetry.scripts]
 source-instagram = "source_instagram.run:run"
 
 [tool.poetry.group.dev.dependencies]
-requests-mock = "^1.9.3"
-pytest-mock = "^3.6"
-pytest = "^8.0.0"
+requests-mock = "^1.12.1"
+pytest-mock = "^3.14.1"
+pytest = "^8.4.0"
 
 
 [tool.poe]
@@ -36,4 +40,32 @@ include = [
     # Shared tasks definition file(s) can be imported here.
     # Run `poe` or `poe --help` to see the list of available tasks.
     "${POE_GIT_DIR}/poe-tasks/poetry-connector-tasks.toml",
+]
+
+
+[tool.poe.tasks]
+unit_tests = "pytest unit_tests"
+integration_tests = "pytest integration_tests"
+spec = "python main.py spec"
+
+[tool.poe.tasks.check]
+cmd = "python main.py check --config ${config_file}"
+help = "Run the check command with a specified or default config file."
+args = [
+    { name = "config_file", default = "secrets/config.json", help = "Path to the config file" },
+]
+
+[tool.poe.tasks.discover]
+cmd = "python main.py discover --config ${config_file}"
+help = "Run the discover command with a specified or default config file."
+args = [
+    { name = "config_file", default = "secrets/config.json", help = "Path to the config file" },
+]
+
+[tool.poe.tasks.read]
+cmd = "python main.py read --config ${config_file} --catalog ${catalog_file}"
+help = "Run the read command with specified or default config and catalog files."
+args = [
+    { name = "config_file", default = "secrets/config.json", help = "Path to the config file" },
+    { name = "catalog_file", default = "sample_files/configured_catalog.json", help = "Path to the catalog file" },
 ]
