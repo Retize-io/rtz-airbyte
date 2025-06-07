@@ -90,7 +90,7 @@ definitions:
             - type: AddedFieldDefinition
               path:
                 - timestamp
-              value: '{% set datetime_str = format_datetime(record["timestamp"], "%Y-%m-%dT%H:%M:%S%z") %}{% set formatted_datetime = datetime_str[:-2] + ":" + datetime_str[-2:] %}{{ formatted_datetime }}'
+              value: '{% set timestamp_str = record["timestamp"] %}{% if timestamp_str.endswith("Z") and "." in timestamp_str %}{{ timestamp_str[:-1] + "+00:00" }}{% elif timestamp_str.endswith("Z") %}{{ timestamp_str[:-1] + "+00:00" }}{% else %}{{ timestamp_str }}{% endif %}'
         - type: AddFields
           fields:
             - type: AddedFieldDefinition
@@ -108,8 +108,9 @@ definitions:
         type: DatetimeBasedCursor
         cursor_field: timestamp
         cursor_datetime_formats:
+          - "%Y-%m-%dT%H:%M:%S.%fZ"
           - "%Y-%m-%dT%H:%M:%S%z"
-        datetime_format: "%Y-%m-%dT%H:%M:%S%z"
+        datetime_format: "%Y-%m-%dT%H:%M:%S.%fZ"
         start_datetime:
           type: MinMaxDatetime
           datetime: "{{ config.get('start_date') or (now_utc() - duration('P30D')).strftime('%Y-%m-%dT%H:%M:%SZ') }}"
@@ -445,7 +446,7 @@ definitions:
             - type: AddedFieldDefinition
               path:
                 - timestamp
-              value: '{% set datetime_str = format_datetime(record["timestamp"], "%Y-%m-%dT%H:%M:%S%z") %}{% set formatted_datetime = datetime_str[:-2] + ":" + datetime_str[-2:] %}{{ formatted_datetime }}'
+              value: '{% set timestamp_str = record["timestamp"] %}{% if timestamp_str.endswith("Z") and "." in timestamp_str %}{{ timestamp_str[:-1] + "+00:00" }}{% elif timestamp_str.endswith("Z") %}{{ timestamp_str[:-1] + "+00:00" }}{% else %}{{ timestamp_str }}{% endif %}'
         - type: CustomTransformation
           class_name: source_instagram.components.InstagramClearUrlTransformation
       schema_loader:
@@ -692,8 +693,9 @@ definitions:
         type: DatetimeBasedCursor
         cursor_field: timestamp
         cursor_datetime_formats:
+          - "%Y-%m-%dT%H:%M:%S.%fZ"
           - "%Y-%m-%dT%H:%M:%S%z"
-        datetime_format: "%Y-%m-%dT%H:%M:%S%z"
+        datetime_format: "%Y-%m-%dT%H:%M:%S.%fZ"
         start_datetime:
           type: MinMaxDatetime
           datetime: "{{ config.get('start_date') or (now_utc() - duration('P30D')).strftime('%Y-%m-%dT%H:%M:%SZ') }}"
