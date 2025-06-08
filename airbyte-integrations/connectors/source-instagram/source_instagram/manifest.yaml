@@ -23,6 +23,7 @@ definitions:
           request_parameters:
             fields: >-
               caption,comments_count,id,ig_id,is_comment_enabled,like_count,media_type,media_product_type,media_url,owner,permalink,shortcode,thumbnail_url,timestamp,username,children
+            since: "{{ config.get('start_date') if not config.get('all_media', false) else '' }}"
           error_handler:
             type: CompositeErrorHandler
             error_handlers:
@@ -483,6 +484,7 @@ definitions:
           request_parameters:
             fields: >-
               caption,id,ig_id,like_count,media_type,media_product_type,media_url,owner,permalink,shortcode,thumbnail_url,timestamp,username
+            since: "{{ config.get('start_date') if not config.get('all_stories', false) else '' }}"
           error_handler:
             type: CompositeErrorHandler
             error_handlers:

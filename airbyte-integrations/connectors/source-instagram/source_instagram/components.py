@@ -309,7 +309,6 @@ class InstagramCommentsTransformation(RecordTransformation):
         # Process the main comment first
         processed_comment = self._process_comment(record, is_reply=False)
         results = [processed_comment]
-        print(results)
         # Handle replies if they exist
         replies = record.get("replies", {}).get("data", [])
         for reply in replies:
@@ -321,21 +320,12 @@ class InstagramCommentsTransformation(RecordTransformation):
     def _process_comment(self, comment: MutableMapping[str, Any], is_reply: bool = False) -> MutableMapping[str, Any]:
         """Process a single comment and extract user information from 'from' field"""
         processed = dict(comment)
-
-        # Keep the original comment id as the primary key (no renaming needed)
-        # The media_id will be added by the manifest as a foreign key
-
-        # Add is_reply field to distinguish between top-level comments and replies
         processed["is_reply"] = is_reply
 
-        # Extract user information from 'from' field
         from_user = processed.get("from", {})
         processed["user_id"] = from_user.get("id", "")
         processed["username"] = from_user.get("username", "")
 
-        # Remove fields we don't need
         processed.pop("from", None)
         processed.pop("replies", None)
-        processed.pop("extracted_at", None)  # Remove extracted_at field
-
         return processed

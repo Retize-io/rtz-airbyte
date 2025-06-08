@@ -67,5 +67,5 @@ cmd = "python main.py read --config ${config_file} --catalog ${catalog_file}"
 help = "Run the read command with specified or default config and catalog files."
 args = [
     { name = "config_file", default = "secrets/config.json", help = "Path to the config file" },
-    { name = "catalog_file", default = "sample_files/configured_catalog.json", help = "Path to the catalog file" },
+    { name = "catalog_file", default = "integration_tests/configured_catalog.json", help = "Path to the catalog file" },
 ]

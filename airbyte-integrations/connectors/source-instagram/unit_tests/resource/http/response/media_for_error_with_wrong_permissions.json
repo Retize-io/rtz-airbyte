@@ -16,7 +16,20 @@
       "permalink": "https://instagram.com/permalink/123",
       "shortcode": "HGagdsy38",
       "timestamp": "2019-05-02T11:42:01+0000",
-      "username": "username"
+      "username": "username",
+      "media_insights_info": {
+        "media_id": "35076616084176123",
+        "media_type": "IMAGE",
+        "media_product_type": "FEED",
+        "permalink": "https://instagram.com/permalink/123",
+        "business_account_id": "222222222222222",
+        "page_id": "111111111111111"
+      },
+      "media_comment_info": {
+        "media_id": "35076616084176123",
+        "business_account_id": "222222222222222",
+        "page_id": "111111111111111"
+      }
     },
     {
       "caption": "a caption",
@@ -34,7 +47,20 @@
       "permalink": "https://instagram.com/permalink/123",
       "shortcode": "HGagdsy38",
       "timestamp": "2019-05-02T11:42:01+0000",
-      "username": "username"
+      "username": "username",
+      "media_insights_info": {
+        "media_id": "35076616084176125",
+        "media_type": "IMAGE",
+        "media_product_type": "FEED",
+        "permalink": "https://instagram.com/permalink/123",
+        "business_account_id": "222222222222222",
+        "page_id": "111111111111111"
+      },
+      "media_comment_info": {
+        "media_id": "35076616084176125",
+        "business_account_id": "222222222222222",
+        "page_id": "111111111111111"
+      }
     }
   ],
   "paging": {

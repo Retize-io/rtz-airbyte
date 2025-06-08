@@ -2,7 +2,7 @@
   "data": [
     {
       "caption": "a caption",
-      "comments_count": 0,
+      "comments_count": 3,
       "id": "35076616084176123",
       "ig_id": "2034885879374760912",
       "is_comment_enabled": true,
@@ -16,7 +16,20 @@
       "permalink": "https://instagram.com/permalink/123",
       "shortcode": "HGagdsy38",
       "timestamp": "2019-05-02T11:42:01+0000",
-      "username": "username"
+      "username": "username",
+      "media_insights_info": {
+        "media_id": "35076616084176123",
+        "media_type": "IMAGE",
+        "media_product_type": "FEED",
+        "permalink": "https://instagram.com/permalink/123",
+        "business_account_id": "222222222222222",
+        "page_id": "111111111111111"
+      },
+      "media_comment_info": {
+        "media_id": "35076616084176123",
+        "business_account_id": "222222222222222",
+        "page_id": "111111111111111"
+      }
     }
   ],
   "paging": {

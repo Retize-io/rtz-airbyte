@@ -27,7 +27,7 @@ class RequestBuilder:
 
     @classmethod
     def get_media_endpoint(cls, item_id: str) -> RequestBuilder:
-        return cls(resource="media").with_item_id(item_id)
+        return cls(resource="media").with_item_id(item_id).with_custom_param("since", "2022-09-01T00:00:00Z")
 
     @classmethod
     def get_media_children_endpoint(cls, item_id: str) -> RequestBuilder:
@@ -38,8 +38,19 @@ class RequestBuilder:
         return cls(resource="insights").with_item_id(item_id)
 
     @classmethod
+    def get_comments_endpoint(cls, item_id: str) -> RequestBuilder:
+        return (
+            cls(resource="comments")
+            .with_item_id(item_id)
+            .with_custom_param(
+                "fields", "from,id,timestamp,text,like_count,hidden,parent_id,replies{from,id,timestamp,text,like_count,hidden,parent_id}"
+            )
+            .with_limit(50)
+        )
+
+    @classmethod
     def get_stories_endpoint(cls, item_id: str) -> RequestBuilder:
-        return cls(resource="stories").with_item_id(item_id)
+        return cls(resource="stories").with_item_id(item_id).with_custom_param("since", "2022-09-01T00:00:00Z")
 
     @classmethod
     def get_users_endpoint(cls, item_id: str) -> RequestBuilder:
