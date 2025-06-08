@@ -1,0 +1,44 @@
+{
+  "data": [
+    {
+      "id": "17841400008460056",
+      "timestamp": "2024-06-01T14:30:00+0000",
+      "text": "Great post! Love this content.",
+      "from": {
+        "id": "17841400008460001"
+      },
+      "hidden": false,
+      "like_count": 5,
+      "parent_id": null
+    },
+    {
+      "id": "17841400008460057",
+      "timestamp": "2024-06-01T15:45:00+0000",
+      "text": "Amazing! Thanks for sharing.",
+      "from": {
+        "id": "17841400008460002"
+      },
+      "hidden": false,
+      "like_count": 2,
+      "parent_id": null
+    },
+    {
+      "id": "17841400008460058",
+      "timestamp": "2024-06-01T16:12:00+0000",
+      "text": "Reply to the first comment",
+      "from": {
+        "id": "17841400008460003"
+      },
+      "hidden": false,
+      "like_count": 1,
+      "parent_id": "17841400008460056"
+    }
+  ],
+  "paging": {
+    "cursors": {
+      "before": "MAZDZD",
+      "after": "MjQZD"
+    },
+    "next": "https://graph.facebook.com/v21.0/35076616084176123/comments?access_token=ACCESS_TOKEN&limit=25&after=MjQZD"
+  }
+}

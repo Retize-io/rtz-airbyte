@@ -50,6 +50,14 @@
         "page_id": "users.page_id",
         "business_account_id": "users.business_account_id"
       }
+    },
+    {
+      "name": "comments",
+      "relations": {
+        "post_id": "media.id",
+        "business_account_id": "users.business_account_id",
+        "page_id": "users.page_id"
+      }
     }
   ]
 }

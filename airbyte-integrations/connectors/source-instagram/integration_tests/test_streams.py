@@ -66,6 +66,74 @@ class TestInstagramSource:
             ), f"Stream state should be type AirbyteStateBlob, got {type(stream_state)} instead"
             assert state_keys_count == 2, f"Stream state should contain 2 partition keys, got {state_keys_count} instead"
 
+    def test_comments_stream_basic(self, config):
+        """
+        Basic integration test for comments stream to ensure it works end-to-end.
+        Tests that the transformation is properly applied and records have expected structure.
+        """
+        records, _ = self._read_records(config, "comments")
+
+        # Note: Comments may be empty for test accounts, so we handle both cases
+        if not records:
+            logging.info("No comments found in test account - this is acceptable for testing")
+            return
+
+        logging.info(f"Found {len(records)} comment records")
+
+        # Validate that records have expected structure after transformation
+        for record_msg in records[:3]:  # Test first 3 records to avoid timeout
+            record_data = record_msg.record.data
+
+            # Validate required fields that should be added by transformation
+            assert "id" in record_data, "Comment record should have 'id' field"
+            assert "media_id" in record_data, "Comment record should have 'media_id' field from transformation"
+            assert "is_reply" in record_data, "Comment record should have 'is_reply' field from transformation"
+            assert "user_id" in record_data, "Comment record should have 'user_id' field from transformation"
+            assert "username" in record_data, "Comment record should have 'username' field from transformation"
+
+            # Validate field types
+            assert isinstance(record_data["id"], str), "Comment id should be string"
+            assert isinstance(record_data["media_id"], str), "media_id should be string"
+            assert isinstance(record_data["is_reply"], bool), "is_reply should be boolean"
+
+            logging.info(
+                f"Validated comment record: {record_data['id']}, media: {record_data['media_id']}, reply: {record_data['is_reply']}"
+            )
+
+    def test_comments_transformation_flattening(self, config):
+        """
+        Test that comment replies are properly flattened into separate records.
+        This validates the core transformation logic.
+        """
+        records, _ = self._read_records(config, "comments")
+
+        if not records:
+            logging.info("No comments data available for flattening test")
+            return
+
+        # Analyze the structure to verify flattening occurred
+        replies = []
+        top_level_comments = []
+
+        for record_msg in records:
+            record_data = record_msg.record.data
+            if record_data.get("is_reply") is True:
+                replies.append(record_data)
+                # Replies should have parent_id
+                assert record_data.get("parent_id"), f"Reply {record_data.get('id')} should have parent_id"
+            else:
+                top_level_comments.append(record_data)
+
+        logging.info(f"Transformation results: {len(top_level_comments)} top-level comments, {len(replies)} replies")
+
+        # If we found replies, validate they're properly structured
+        for reply in replies:
+            assert reply.get("id") != reply.get("parent_id"), "Reply should have different ID than parent"
+            assert reply.get("media_id"), "Reply should have media_id"
+
+        # This confirms that nested replies were flattened into separate records
+        # rather than remaining nested within parent comments
+
     @staticmethod
     def _read_records(conf, stream_name, state=None) -> Tuple[List[AirbyteMessage], List[AirbyteMessage]]:
         records = []

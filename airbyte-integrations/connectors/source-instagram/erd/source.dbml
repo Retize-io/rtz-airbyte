@@ -120,6 +120,21 @@ Table "user_insights" {
     }
 }
 
+Table "comments" {
+    "media_id" string
+    "page_id" string
+    "business_account_id" string
+    "id" string [pk] // The unique identifier for the comment
+    "timestamp" string
+    "text" string
+    "user_id" string
+    "username" string
+    "hidden" boolean
+    "like_count" integer
+    "parent_id" string
+    "is_reply" boolean
+}
+
 Ref {
     "media"."page_id" <> "users"."page_id"
 }
@@ -146,4 +161,12 @@ Ref {
 
 Ref {
     "user_insights"."page_id" <> "users"."page_id"
+}
+
+Ref {
+    "comments"."media_id" <> "media"."id"
+}
+
+Ref {
+    "comments"."page_id" <> "users"."page_id"
 }

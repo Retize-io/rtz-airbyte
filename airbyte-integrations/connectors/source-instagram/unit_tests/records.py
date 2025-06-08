@@ -256,3 +256,121 @@ insights_record_transformed = {
     "shares": 1,
     "views": 2147,
 }
+
+# Instagram Comments Transformation test records
+comments_record_with_replies = {
+    "id": "comment_123",
+    "timestamp": "2023-01-01T12:00:00+0000",
+    "text": "Great post!",
+    "from": {"id": "user_123", "username": "john_doe"},
+    "like_count": 5,
+    "hidden": False,
+    "parent_id": None,
+    "replies": {
+        "data": [
+            {
+                "id": "reply_456",
+                "timestamp": "2023-01-01T13:00:00+0000",
+                "text": "Thanks!",
+                "from": {"id": "user_456", "username": "jane_doe"},
+                "like_count": 1,
+                "hidden": False,
+                "parent_id": "comment_123",
+            },
+            {
+                "id": "reply_789",
+                "timestamp": "2023-01-01T14:00:00+0000",
+                "text": "Agreed!",
+                "from": {"id": "user_789", "username": "bob_smith"},
+                "like_count": 3,
+                "hidden": False,
+                "parent_id": "comment_123",
+            },
+        ]
+    },
+    "extracted_at": "2023-01-01T15:00:00+0000",  # Should be removed
+}
+
+comments_record_no_replies = {
+    "id": "comment_999",
+    "timestamp": "2023-01-02T10:00:00+0000",
+    "text": "Nice photo!",
+    "from": {"id": "user_999", "username": "alice_wonder"},
+    "like_count": 8,
+    "hidden": False,
+    "parent_id": None,
+}
+
+expected_comments_transformed_with_replies = [
+    {
+        "id": "comment_123",
+        "timestamp": "2023-01-01T12:00:00+0000",
+        "text": "Great post!",
+        "user_id": "user_123",
+        "username": "john_doe",
+        "like_count": 5,
+        "hidden": False,
+        "parent_id": None,
+        "is_reply": False,
+    },
+    {
+        "id": "reply_456",
+        "timestamp": "2023-01-01T13:00:00+0000",
+        "text": "Thanks!",
+        "user_id": "user_456",
+        "username": "jane_doe",
+        "like_count": 1,
+        "hidden": False,
+        "parent_id": "comment_123",
+        "is_reply": True,
+    },
+    {
+        "id": "reply_789",
+        "timestamp": "2023-01-01T14:00:00+0000",
+        "text": "Agreed!",
+        "user_id": "user_789",
+        "username": "bob_smith",
+        "like_count": 3,
+        "hidden": False,
+        "parent_id": "comment_123",
+        "is_reply": True,
+    },
+]
+
+expected_comments_transformed_no_replies = [
+    {
+        "id": "comment_999",
+        "timestamp": "2023-01-02T10:00:00+0000",
+        "text": "Nice photo!",
+        "user_id": "user_999",
+        "username": "alice_wonder",
+        "like_count": 8,
+        "hidden": False,
+        "parent_id": None,
+        "is_reply": False,
+    }
+]
+
+# Edge case: comment with missing from field
+comments_record_missing_from = {
+    "id": "comment_empty",
+    "timestamp": "2023-01-03T09:00:00+0000",
+    "text": "Anonymous comment",
+    "like_count": 0,
+    "hidden": True,
+    "parent_id": None,
+}
+
+expected_comments_transformed_missing_from = [
+    {
+        "id": "comment_empty",
+        "timestamp": "2023-01-03T09:00:00+0000",
+        "text": "Anonymous comment",
+        "user_id": "",
+        "username": "",
+        "like_count": 0,
+        "hidden": True,
+        "parent_id": None,
+        "is_reply": False,
+    }
+]

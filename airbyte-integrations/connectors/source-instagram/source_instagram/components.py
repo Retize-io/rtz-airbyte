@@ -2,7 +2,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, MutableMapping, Optional
+from typing import Any, Dict, Iterator, List, MutableMapping, Optional
 
 import requests
 
@@ -236,3 +236,106 @@ class InstagramBreakDownResultsTransformation(RecordTransformation):
         record_total_value = record.pop("total_value")
         record["value"] = {res.get("dimension_values", [""])[0]: res.get("value") for res in record_total_value["breakdowns"][0]["results"]}
         return record
+
+
+@dataclass
+class InstagramCommentsTransformation(RecordTransformation):
+    """
+    The transformation processes Instagram comments with nested replies and flattens them into individual records.
+    It also extracts user information from the 'from' field into separate user_id and username fields.
+
+    Example Input:
+    {
+        "data": [
+            {
+                "id": "123",
+                "timestamp": "2023-01-01T12:00:00+0000",
+                "text": "Great post!",
+                "from": {
+                    "id": "user123",
+                    "username": "john_doe"
+                },
+                "like_count": 5,
+                "hidden": false,
+                "parent_id": null,
+                "replies": {
+                    "data": [
+                        {
+                            "id": "456",
+                            "timestamp": "2023-01-01T13:00:00+0000",
+                            "text": "Thanks!",
+                            "from": {
+                                "id": "user456",
+                                "username": "jane_doe"
+                            },
+                            "like_count": 1,
+                            "hidden": false,
+                            "parent_id": "123"
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+
+    Example Output: Returns two records
+    [
+        {
+            "id": "123",
+            "timestamp": "2023-01-01T12:00:00+0000",
+            "text": "Great post!",
+            "user_id": "user123",
+            "username": "john_doe",
+            "like_count": 5,
+            "hidden": false,
+            "parent_id": null,
+            "is_reply": false
+        },
+        {
+            "id": "456",
+            "timestamp": "2023-01-01T13:00:00+0000",
+            "text": "Thanks!",
+            "user_id": "user456",
+            "username": "jane_doe",
+            "like_count": 1,
+            "hidden": false,
+            "parent_id": "123",
+            "is_reply": true
+        }
+    ]
+    """
+
+    def transform(self, record: MutableMapping[str, Any], **kwargs) -> List[MutableMapping[str, Any]]:
+        # Process the main comment first
+        processed_comment = self._process_comment(record, is_reply=False)
+        results = [processed_comment]
+        print(results)
+        # Handle replies if they exist
+        replies = record.get("replies", {}).get("data", [])
+        for reply in replies:
+            processed_reply = self._process_comment(reply, is_reply=True)
+            results.append(processed_reply)
+
+        return results
+
+    def _process_comment(self, comment: MutableMapping[str, Any], is_reply: bool = False) -> MutableMapping[str, Any]:
+        """Process a single comment and extract user information from 'from' field"""
+        processed = dict(comment)
+
+        # Keep the original comment id as the primary key (no renaming needed)
+        # The media_id will be added by the manifest as a foreign key
+
+        # Add is_reply field to distinguish between top-level comments and replies
+        processed["is_reply"] = is_reply
+
+        # Extract user information from 'from' field
+        from_user = processed.get("from", {})
+        processed["user_id"] = from_user.get("id", "")
+        processed["username"] = from_user.get("username", "")
+
+        # Remove fields we don't need
+        processed.pop("from", None)
+        processed.pop("replies", None)
+        processed.pop("extracted_at", None)  # Remove extracted_at field
+
+        return processed

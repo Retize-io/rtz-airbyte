@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Unsupported request - method type was post",
+    "type": "GraphMethodException",
+    "code": 100,
+    "fbtrace_id": "AXQNONUqTsNlbhUF-PVjpvb"
+  }
+}

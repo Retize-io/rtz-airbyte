@@ -546,6 +546,70 @@
       "default_cursor_field": ["date"],
       "source_defined_primary_key": [["business_account_id"], ["date"]],
       "is_resumable": true
+    },
+    {
+      "name": "comments",
+      "json_schema": {
+        "type": "object",
+        "$schema": "http://json-schema.org/schema#",
+        "additionalProperties": true,
+        "properties": {
+          "media_id": {
+            "description": "The unique identifier for the media (post) that the comment is associated with.",
+            "type": ["null", "string"]
+          },
+          "page_id": {
+            "description": "The unique identifier for the Instagram page associated with the comment.",
+            "type": ["null", "string"]
+          },
+          "business_account_id": {
+            "description": "The unique identifier for the business account associated with the comment.",
+            "type": ["null", "string"]
+          },
+          "id": {
+            "description": "The unique identifier for the comment (primary key).",
+            "type": ["null", "string"]
+          },
+          "timestamp": {
+            "description": "The date and time when the comment was created.",
+            "type": ["null", "string"],
+            "format": "date-time",
+            "airbyte_type": "timestamp_with_timezone"
+          },
+          "text": {
+            "description": "The text content of the comment.",
+            "type": ["null", "string"]
+          },
+          "user_id": {
+            "description": "The unique identifier of the user who made the comment.",
+            "type": ["null", "string"]
+          },
+          "username": {
+            "description": "The username of the user who made the comment.",
+            "type": ["null", "string"]
+          },
+          "hidden": {
+            "description": "A flag indicating whether the comment is hidden.",
+            "type": ["null", "boolean"]
+          },
+          "like_count": {
+            "description": "The number of likes the comment has received.",
+            "type": ["null", "integer"]
+          },
+          "parent_id": {
+            "description": "The unique identifier of the parent comment, if this comment is a reply.",
+            "type": ["null", "string"]
+          },
+          "is_reply": {
+            "description": "A flag indicating whether this is a reply to another comment (true) or a top-level comment (false).",
+            "type": ["null", "boolean"]
+          }
+        },
+        "required": ["id"]
+      },
+      "supported_sync_modes": ["full_refresh"],
+      "source_defined_primary_key": [["id"]],
+      "is_resumable": false
     }
   ]
 }

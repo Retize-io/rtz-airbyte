@@ -81,6 +81,15 @@ definitions:
           fields:
             - type: AddedFieldDefinition
               path:
+                - media_comment_info
+              value: >-
+                {{ {"media_id": record['id'], "business_account_id":
+                stream_partition.account.business_account_id, "page_id":
+                stream_partition.account.page_id} }}
+        - type: AddFields
+          fields:
+            - type: AddedFieldDefinition
+              path:
                 - page_id
               value: "{{ stream_partition.account.page_id }}"
               value_type: string
@@ -209,6 +218,118 @@ definitions:
         type: InlineSchemaLoader
         schema:
           $ref: "#/schemas/MediaInsights"
+    Comments:
+      type: DeclarativeStream
+      name: comments
+      primary_key:
+        - id
+      retriever:
+        type: SimpleRetriever
+        requester:
+          $ref: "#/definitions/base_requester"
+          url: "https://graph.facebook.com/v21.0/{{ stream_partition.media_comment_info.media_id }}/comments"
+          http_method: GET
+          request_parameters:
+            fields: "from,id,timestamp,text,like_count,hidden,parent_id,replies{from,id,timestamp,text,like_count,hidden,parent_id}"
+          error_handler:
+            type: CompositeErrorHandler
+            error_handlers:
+              - type: DefaultErrorHandler
+                max_retries: 5
+                backoff_strategies:
+                  - type: ExponentialBackoffStrategy
+                    factor: 5
+                response_filters:
+                  - type: HttpResponseFilter
+                    action: IGNORE
+                    predicate: >-
+                      {{ 'error' in response and
+                      response['error']['error_subcode'] == 2108006 }}
+                    http_codes: []
+                    error_message: >-
+                      Comments error for media_id: {{
+                      response['error']['message'] }}
+              - type: DefaultErrorHandler
+                max_retries: 5
+                backoff_strategies:
+                  - type: ExponentialBackoffStrategy
+                    factor: 5
+                response_filters:
+                  - type: HttpResponseFilter
+                    action: IGNORE
+                    predicate: >-
+                      {{ 'error' in response and ( (response['error']['code'] ==
+                      100 and response['error']['error_subcode'] == 33) or
+                      (response['error']['code'] == 10 and
+                      response['error']['message'] == "(#10) Application does
+                      not have permission for this action") ) }}
+                    error_message: >-
+                      Check provided permissions for: {{
+                      response['error']['message'] }}
+        record_selector:
+          type: RecordSelector
+          extractor:
+            type: DpathExtractor
+            field_path:
+              - data
+        record_filter:
+          type: RecordFilter
+          condition: "{{ record.get('id') is not none }}"
+        paginator:
+          type: DefaultPaginator
+          page_token_option:
+            type: RequestOption
+            inject_into: request_parameter
+            field_name: after
+          page_size_option:
+            type: RequestOption
+            field_name: limit
+            inject_into: request_parameter
+          pagination_strategy:
+            type: CursorPagination
+            page_size: 50
+            cursor_value: "{{ response.get('paging', {}).get('cursors', {}).get('after', {}) }}"
+            stop_condition: >-
+              {{ not response.get("paging", {}).get("cursors", {}).get("after",
+              {}) }}
+        partition_router:
+          type: SubstreamPartitionRouter
+          parent_stream_configs:
+            - type: ParentStreamConfig
+              parent_key: media_comment_info
+              partition_field: media_comment_info
+              stream:
+                $ref: "#/definitions/streams/Media"
+      transformations:
+        - type: CustomTransformation
+          class_name: source_instagram.components.InstagramCommentsTransformation
+        - type: AddFields
+          fields:
+            - type: AddedFieldDefinition
+              path:
+                - media_id
+              value: "{{ stream_partition.media_comment_info.media_id }}"
+              value_type: string
+        - type: AddFields
+          fields:
+            - type: AddedFieldDefinition
+              path:
+                - page_id
+              value: "{{ stream_partition.media_comment_info.page_id }}"
+              value_type: string
+        - type: AddFields
+          fields:
+            - type: AddedFieldDefinition
+              path:
+                - business_account_id
+              value: "{{ stream_partition.media_comment_info.business_account_id }}"
+              value_type: string
+        - type: CustomTransformation
+          class_name: source_instagram.components.InstagramClearUrlTransformation
+      schema_loader:
+        type: InlineSchemaLoader
+        schema:
+          $ref: "#/schemas/Comments"
     Users:
       type: DeclarativeStream
       name: users
@@ -581,6 +702,7 @@ definitions:
 streams:
   - $ref: "#/definitions/streams/Media"
   - $ref: "#/definitions/streams/MediaInsights"
+  - $ref: "#/definitions/streams/Comments"
   - $ref: "#/definitions/streams/Users"
   - $ref: "#/definitions/streams/UserLifetimeInsights"
   - $ref: "#/definitions/streams/Stories"
@@ -597,6 +719,7 @@ metadata:
   autoImportSchema:
     Media: true
     MediaInsights: true
+    Comments: true
     Users: true
     UserLifetimeInsights: true
     Stories: true
@@ -607,6 +730,8 @@ metadata:
       Media:
         - transformations
       MediaInsights:
+        - transformations
+      Comments:
         - transformations
       Users:
         - transformations
@@ -860,6 +985,75 @@ schemas:
         type:
           - "null"
           - integer
+    required:
+      - id
+  Comments:
+    type: object
+    $schema: http://json-schema.org/schema#
+    additionalProperties: true
+    properties:
+      media_id:
+        description: The unique identifier for the media item that the comment is associated with.
+        type:
+          - "null"
+          - string
+      page_id:
+        description: The unique identifier for the Instagram page associated with the comment.
+        type:
+          - "null"
+          - string
+      business_account_id:
+        description: The unique identifier for the business account associated with the comment.
+        type:
+          - "null"
+          - string
+      id:
+        description: The unique identifier for the comment (primary key).
+        type:
+          - "null"
+          - string
+      timestamp:
+        description: The date and time when the comment was created.
+        type:
+          - "null"
+          - string
+        format: date-time
+        airbyte_type: timestamp_with_timezone
+      text:
+        description: The text content of the comment.
+        type:
+          - "null"
+          - string
+      user_id:
+        description: The unique identifier of the user who made the comment.
+        type:
+          - "null"
+          - string
+      username:
+        description: The username of the user who made the comment.
+        type:
+          - "null"
+          - string
+      hidden:
+        description: A flag indicating whether the comment is hidden.
+        type:
+          - "null"
+          - boolean
+      like_count:
+        description: The number of likes the comment has received.
+        type:
+          - "null"
+          - integer
+      parent_id:
+        description: The unique identifier of the parent comment, if this comment is a reply.
+        type:
+          - "null"
+          - string
+      is_reply:
+        description: A flag indicating whether this is a reply to another comment (true) or a top-level comment (false).
+        type:
+          - "null"
+          - boolean
     required:
       - id
   Users:
