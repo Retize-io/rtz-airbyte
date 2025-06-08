@@ -18,7 +18,7 @@ definitions:
         type: SimpleRetriever
         requester:
           $ref: "#/definitions/base_requester"
-          path: "{{ stream_partition.account.business_account_id }}/media"
+          url: "https://graph.facebook.com/v21.0/{{ stream_partition.account.business_account_id }}/media"
           http_method: GET
           request_parameters:
             fields: >-
@@ -114,7 +114,7 @@ definitions:
         type: SimpleRetriever
         requester:
           $ref: "#/definitions/base_requester"
-          path: "{{ stream_partition.media_insights_info.media_id }}/insights"
+          url: "https://graph.facebook.com/v21.0/{{ stream_partition.media_insights_info.media_id }}/insights"
           http_method: GET
           request_parameters:
             metric: >-
@@ -218,7 +218,7 @@ definitions:
         type: SimpleRetriever
         requester:
           $ref: "#/definitions/base_requester"
-          path: "{{ stream_partition.account.business_account_id }}"
+          url: "https://graph.facebook.com/v21.0/{{ stream_partition.account.business_account_id }}"
           http_method: GET
           request_parameters:
             fields: >-
@@ -268,7 +268,7 @@ definitions:
         type: SimpleRetriever
         requester:
           $ref: "#/definitions/base_requester"
-          path: "{{ stream_partition.account.business_account_id }}/insights"
+          url: "https://graph.facebook.com/v21.0/{{ stream_partition.account.business_account_id }}/insights"
           http_method: GET
           request_parameters:
             limit: "100"
@@ -357,7 +357,7 @@ definitions:
         type: SimpleRetriever
         requester:
           $ref: "#/definitions/base_requester"
-          path: "{{ stream_partition.account.business_account_id}}/stories"
+          url: "https://graph.facebook.com/v21.0/{{ stream_partition.account.business_account_id}}/stories"
           http_method: GET
           request_parameters:
             fields: >-
@@ -446,7 +446,7 @@ definitions:
         type: SimpleRetriever
         requester:
           $ref: "#/definitions/base_requester"
-          path: "{{ stream_partition.story_insights_info.story_id }}/insights"
+          url: "https://graph.facebook.com/v21.0/{{ stream_partition.story_insights_info.story_id }}/insights"
           http_method: GET
           request_parameters:
             metric: reach,replies,follows,profile_visits,shares,total_interactions,views
@@ -517,7 +517,7 @@ definitions:
         type: SimpleRetriever
         requester:
           $ref: "#/definitions/base_requester"
-          path: me/accounts
+          url: "https://graph.facebook.com/v21.0/me/accounts"
           http_method: GET
           request_parameters:
             fields: id,instagram_business_account
@@ -574,7 +574,6 @@ definitions:
           $ref: "#/schemas/Api"
   base_requester:
     type: HttpRequester
-    url_base: https://graph.facebook.com/v21.0
     authenticator:
       type: BearerAuthenticator
       api_token: '{{ config["access_token"] }}'

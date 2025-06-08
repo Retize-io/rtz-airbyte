@@ -21,9 +21,7 @@ from airbyte_cdk.models import (
 
 logger = logging.getLogger("airbyte")
 
-GRAPH_URL = resolve_manifest(source=SourceInstagram(config={}, catalog=None, state=None)).record.data["manifest"]["definitions"][
-    "base_requester"
-]["url_base"]
+GRAPH_URL = "https://graph.facebook.com/v21.0"
 
 account_url = f"{GRAPH_URL}/me/accounts?fields=id%2Cname%2Cinstagram_business_account%7Bid%7D"
 

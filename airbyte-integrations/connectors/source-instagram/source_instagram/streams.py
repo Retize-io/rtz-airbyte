@@ -12,7 +12,7 @@ import pendulum
 from cached_property import cached_property
 
 from airbyte_cdk.models import SyncMode
-from airbyte_cdk.sources.streams import IncrementalMixin, Stream
+from airbyte_cdk.sources.streams import CheckpointMixin, Stream
 from airbyte_cdk.sources.utils.transform import TransformConfig, TypeTransformer
 from source_instagram.api import InstagramAPI
 
@@ -94,7 +94,7 @@ class InstagramStream(Stream, ABC):
         return record
 
 
-class InstagramIncrementalStream(InstagramStream, IncrementalMixin):
+class InstagramIncrementalStream(InstagramStream, CheckpointMixin):
     """Base class for incremental streams"""
 
     def __init__(self, start_date: datetime, **kwargs):
@@ -200,7 +200,7 @@ class UserInsights(DatetimeTransformerMixin, InstagramIncrementalStream):
 
         yield from complete_records
 
-        # update state using IncrementalMixin
+        # update state using CheckpointMixin
         # reference issue: https://github.com/airbytehq/airbyte/issues/24697
         if sync_mode == SyncMode.incremental and complete_records:
             for record in complete_records:
@@ -233,8 +233,8 @@ class UserInsights(DatetimeTransformerMixin, InstagramIncrementalStream):
                 self.logger.info(f"Reading insights between {since.date()} and {until.date()}")
                 yield {
                     **stream_slice,
-                    "since": since.to_iso8601_string(),
-                    "until": until.to_iso8601_string(),  # excluding
+                    "since": since.format("YYYY-MM-DDTHH:mm:ssZ"),
+                    "until": until.format("YYYY-MM-DDTHH:mm:ssZ"),  # excluding
                 }
                 current_date = current_date.add(days=self.days_increment)
 
