@@ -7,11 +7,20 @@
     "properties": {
       "start_date": {
         "title": "Start Date",
-        "description": "The date from which you'd like to replicate data for User Insights, Media, and Stories, in the format YYYY-MM-DDT00:00:00Z. All data generated after this date will be replicated. If left blank, the start date will be set to 2 years before the present date. This is ignored for Media if 'all_media' is set to true, and ignored for Stories if 'all_stories' is set to true.",
+        "description": "The date from which you'd like to replicate data for User Insights, Media, and Stories, in the format YYYY-MM-DDT00:00:00Z. All data generated after this date will be replicated. If left blank, the start date will be calculated based on the lookback_days setting. This is ignored for Media if 'all_media' is set to true, and ignored for Stories if 'all_stories' is set to true.",
         "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
         "examples": ["2017-01-25T00:00:00Z"],
         "type": "string",
         "format": "date-time"
+      },
+      "lookback_days": {
+        "title": "Lookback Days",
+        "description": "The number of days to look back from today to set the start date if no explicit start_date is provided. Default is 365 days (1 year).",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 3650,
+        "default": 365,
+        "examples": [30, 90, 365, 730]
       },
       "all_media": {
         "title": "Download All Media",

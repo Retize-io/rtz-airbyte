@@ -43,9 +43,10 @@ class SourceInstagram(YamlDeclarativeSource):
         return super().check_connection(logger, config)
 
     def _validate_start_date(self, config):
-        # If start_date is not found in config, set it to 2 years ago
+        # If start_date is not found in config, set it based on the lookback_days (default 365 days)
         if not config.get("start_date"):
-            config["start_date"] = pendulum.now().subtract(years=2).in_timezone("UTC").format("YYYY-MM-DDTHH:mm:ss.SSS[Z]")
+            lookback_days = config.get("lookback_days", 365)  # Default to 365 days if lookback_days not specified
+            config["start_date"] = pendulum.now().subtract(days=lookback_days).in_timezone("UTC").format("YYYY-MM-DDTHH:mm:ss.SSS[Z]")
         else:
             if pendulum.parse(config["start_date"]) > pendulum.now():
                 raise ValueError("Please fix the start_date parameter in config, it cannot be in the future")
