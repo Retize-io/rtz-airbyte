@@ -288,7 +288,6 @@ comments_record_with_replies = {
             },
         ]
     },
-    "extracted_at": "2023-01-01T15:00:00+0000",  # Should be removed
 }
 
 comments_record_no_replies = {

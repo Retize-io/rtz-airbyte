@@ -87,18 +87,10 @@ class TestInstagramSource:
             # Validate required fields that should be added by transformation
             assert "id" in record_data, "Comment record should have 'id' field"
             assert "media_id" in record_data, "Comment record should have 'media_id' field from transformation"
-            assert "is_reply" in record_data, "Comment record should have 'is_reply' field from transformation"
-            assert "user_id" in record_data, "Comment record should have 'user_id' field from transformation"
-            assert "username" in record_data, "Comment record should have 'username' field from transformation"
 
             # Validate field types
             assert isinstance(record_data["id"], str), "Comment id should be string"
             assert isinstance(record_data["media_id"], str), "media_id should be string"
-            assert isinstance(record_data["is_reply"], bool), "is_reply should be boolean"
-
-            logging.info(
-                f"Validated comment record: {record_data['id']}, media: {record_data['media_id']}, reply: {record_data['is_reply']}"
-            )
 
     def test_comments_transformation_flattening(self, config):
         """

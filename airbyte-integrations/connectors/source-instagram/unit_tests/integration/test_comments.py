@@ -23,7 +23,7 @@ from .config import BUSINESS_ACCOUNT_ID, ConfigBuilder
 from .pagination import NEXT_PAGE_TOKEN, InstagramPaginationStrategy
 from .request_builder import RequestBuilder, get_account_request
 from .response_builder import get_account_response
-from .utils import config, read_output
+from .utils import config, read_output, read_output_with_parent
 
 
 PARENT_FIELDS = [
@@ -97,9 +97,10 @@ def _record(stream_name: str, test: str = None) -> RecordBuilder:
 class TestFullRefresh(TestCase):
     @staticmethod
     def _read(config_: ConfigBuilder, expecting_exception: bool = False) -> EntrypointOutput:
-        return read_output(
+        return read_output_with_parent(
             config_builder=config_,
-            stream_name=_STREAM_NAME,
+            parent_stream_name=_PARENT_STREAM_NAME,
+            child_stream_name=_STREAM_NAME,
             sync_mode=SyncMode.full_refresh,
             expecting_exception=expecting_exception,
         )
@@ -127,10 +128,13 @@ class TestFullRefresh(TestCase):
         output = self._read(config_=config())
         print("*" * 100)
         print(output.records)
-        assert len(output.records) == 3  # Based on the comments_for_general_media.json template
+
+        # Filter to only get comment records, not media records
+        comment_records = [r for r in output.records if r.record.stream == "comments"]
+        assert len(comment_records) == 3  # Based on the comments_for_general_media.json template
 
         # Verify first record structure
-        first_record = output.records[0].record.data
+        first_record = comment_records[0].record.data
         assert first_record["page_id"]
         assert first_record["business_account_id"]
         assert first_record["media_id"]
@@ -141,8 +145,8 @@ class TestFullRefresh(TestCase):
         assert "hidden" in first_record
         assert "like_count" in first_record  # parent_id might be null for root comments, so just check it exists in the schema
 
-        root_comments = [r for r in output.records if r.record.data.get("parent_id") is None]
-        reply_comments = [r for r in output.records if r.record.data.get("parent_id") is not None]
+        root_comments = [r for r in comment_records if r.record.data.get("parent_id") is None]
+        reply_comments = [r for r in comment_records if r.record.data.get("parent_id") is not None]
         assert len(root_comments) == 2
         assert len(reply_comments) == 1
 
@@ -167,9 +171,11 @@ class TestFullRefresh(TestCase):
 
         output = self._read(config_=config(), expecting_exception=False)
 
-        assert len(output.records) == 3
+        # Filter to only get comment records, not media records
+        comment_records = [r for r in output.records if r.record.stream == "comments"]
+        assert len(comment_records) == 3
 
-        for record in output.records:
+        for record in comment_records:
             assert record.record.data["media_id"] == MEDIA_ID_GENERAL_MEDIA
 
     @HttpMocker()
@@ -196,10 +202,13 @@ class TestFullRefresh(TestCase):
         )
 
         output = self._read(config_=config())
-        assert len(output.records) == 3  # Should have exactly 3 comments from the template
+
+        # Filter to only get comment records, not media records
+        comment_records = [r for r in output.records if r.record.stream == "comments"]
+        assert len(comment_records) == 3  # Should have exactly 3 comments from the template
 
         # Verify record structure and content
-        first_record = output.records[0].record.data
+        first_record = comment_records[0].record.data
         assert first_record["page_id"]
         assert first_record["business_account_id"]
         assert first_record["media_id"]
@@ -211,8 +220,8 @@ class TestFullRefresh(TestCase):
         assert "like_count" in first_record
 
         # Verify that we have both root comments and replies
-        root_comments = [r for r in output.records if r.record.data.get("parent_id") is None]
-        reply_comments = [r for r in output.records if r.record.data.get("parent_id") is not None]
+        root_comments = [r for r in comment_records if r.record.data.get("parent_id") is None]
+        reply_comments = [r for r in comment_records if r.record.data.get("parent_id") is not None]
         assert len(root_comments) == 2
         assert len(reply_comments) == 1
 
